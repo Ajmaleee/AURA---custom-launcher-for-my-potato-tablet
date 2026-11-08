@@ -8,6 +8,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
+import android.text.TextPaint;
 import android.text.TextUtils;
 import android.view.View;
 
@@ -19,7 +20,7 @@ class IconView extends View {
     final Prefs p;
     final IconCache ic;
     final Paint pt = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
-    final Paint tp = new Paint(Paint.ANTI_ALIAS_FLAG);
+    final TextPaint tp = new TextPaint(Paint.ANTI_ALIAS_FLAG);
     final RectF rf = new RectF();
     Item e;
     int idx;
@@ -37,15 +38,20 @@ class IconView extends View {
         tp.setTextSize(p.px(12));
     }
 
-    void bind(Item e) { this.e = e; ell = null; invalidate(); }
+    void bind(Item e) {
+        this.e = e;
+        ell = null;
+        invalidate();
+    }
 
-    /** Panels draw dark text without a shadow; the wallpaper uses white text with one. */
+    /** Panels use dark text without a shadow; the wallpaper uses white text with one. */
     void setLabelStyle(int color, boolean shadow) {
         labelColor = color;
         if (shadow) tp.setShadowLayer(2, 0, 1, 0x99000000);
     }
 
-    @Override public void setPressed(boolean pr) {
+    @Override
+    public void setPressed(boolean pr) {
         super.setPressed(pr);
         setScaleX(pr ? 0.92f : 1f);
         setScaleY(pr ? 0.92f : 1f);
@@ -61,14 +67,22 @@ class IconView extends View {
             }
             if (!jig.isRunning()) jig.start();
         } else {
-            if (jig != null) { jig.cancel(); jig = null; }
+            if (jig != null) {
+                jig.cancel();
+                jig = null;
+            }
             setRotation(0);
         }
     }
 
-    @Override protected void onDetachedFromWindow() { super.onDetachedFromWindow(); jiggle(false); }
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        jiggle(false);
+    }
 
-    @Override protected void onDraw(Canvas c) {
+    @Override
+    protected void onDraw(Canvas c) {
         if (e == null) return;
         int w = getWidth(), s = ic.size, l = (w - s) / 2;
         if (e.isFolder()) {
@@ -79,15 +93,19 @@ class IconView extends View {
             float m = s * 0.36f, g = s * 0.09f;
             for (int k = 0; k < 4 && k < e.kids.size(); k++) {
                 Bitmap b = ic.get(e.kids.get(k));
-                if (b == null) { ic.load(e.kids.get(k), this); continue; }
+                if (b == null) {
+                    ic.load(e.kids.get(k), this);
+                    continue;
+                }
                 float x = l + g + (k % 2) * (m + g * 0.6f), y = g + (k / 2) * (m + g * 0.6f);
                 rf.set(x, y, x + m, y + m);
                 c.drawBitmap(b, null, rf, pt);
             }
         } else {
             Bitmap b = ic.get(e.comp);
-            if (b != null) c.drawBitmap(b, l, 0, null);
-            else {
+            if (b != null) {
+                c.drawBitmap(b, l, 0, null);
+            } else {
                 pt.setColor(0x33FFFFFF);
                 rf.set(l, 0, l + s, s);
                 c.drawRoundRect(rf, s * 0.225f, s * 0.225f, pt);
