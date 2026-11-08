@@ -27,9 +27,16 @@ jobs:
           yes | "$SDKM" --licenses > /dev/null || true
           "$SDKM" "platforms;android-33" "build-tools;30.0.3"
 
-      - uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '7.5.1'
+      - name: Install Gradle 7.5.1 (with retries and a backup source)
+        run: |
+          for u in \
+            https://services.gradle.org/distributions/gradle-7.5.1-bin.zip \
+            https://github.com/gradle/gradle-distributions/releases/download/v7.5.1/gradle-7.5.1-bin.zip
+          do
+            curl -fsSL --retry 5 --retry-all-errors --retry-delay 5 -o /tmp/gradle.zip "$u" && break
+          done
+          sudo unzip -q /tmp/gradle.zip -d /opt
+          echo "/opt/gradle-7.5.1/bin" >> "$GITHUB_PATH"
 
       - name: Safety patch for HomeView
         run: sed -i 's/final LauncherActivity a;/LauncherActivity a;/' "$(find . -name HomeView.java | head -1)"
