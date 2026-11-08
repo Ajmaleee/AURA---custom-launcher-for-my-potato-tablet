@@ -14,19 +14,33 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout source
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Java 17
+      - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: Install Gradle 8.9
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.9'
+      - name: Download Gradle 8.9
+        shell: bash
+        run: |
+          for attempt in 1 2 3 4 5; do
+            if curl -fL --retry 3 \
+              https://services.gradle.org/distributions/gradle-8.9-bin.zip \
+              -o "$RUNNER_TEMP/gradle.zip"; then
+              break
+            fi
+            sleep 10
+          done
+
+          test -s "$RUNNER_TEMP/gradle.zip"
+          unzip -q "$RUNNER_TEMP/gradle.zip" -d "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/gradle-8.9/bin" >> "$GITHUB_PATH"
+
+      - name: Verify Gradle
+        run: gradle --version
 
       - name: Build APK
         run: gradle assembleDebug --no-daemon
