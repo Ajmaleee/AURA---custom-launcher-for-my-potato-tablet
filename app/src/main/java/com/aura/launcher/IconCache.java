@@ -19,9 +19,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * Lazy, size-bounded icon cache. Icons are rendered once onto a rounded plate
- * (consistent iOS-style shape) on a single background thread, held in a 2 MB LRU,
- * and dropped on memory pressure.
+ * Lazy, size-bounded icon cache. Known apps get a procedurally drawn iOS-style icon
+ * (see Ios); every other app is rendered once onto a rounded plate. Loading happens on
+ * a single background thread; results sit in a 2 MB LRU and are dropped on memory pressure.
  */
 class IconCache {
     final PackageManager pm;
@@ -49,12 +49,20 @@ class IconCache {
         final int s = size;
         ex.execute(new Runnable() {
             public void run() {
-                Drawable d = null;
-                try { d = pm.getActivityIcon(ComponentName.unflattenFromString(comp)); } catch (Exception e) { }
-                final Bitmap b = render(d, s);
+                Bitmap b = null;
+                try {
+                    ComponentName cn = ComponentName.unflattenFromString(comp);
+                    String label = "";
+                    try { label = String.valueOf(pm.getActivityInfo(cn, 0).loadLabel(pm)); } catch (Exception e) { }
+                    String k = Ios.kind(comp, label);
+                    if (k != null) b = Ios.render(k, s);
+                    if (b == null) b = render(pm.getActivityIcon(cn), s);
+                } catch (Exception e) { }
+                if (b == null) b = render(null, s);
+                final Bitmap fb = b;
                 ui.post(new Runnable() {
                     public void run() {
-                        if (s == size) cache.put(comp, b);
+                        if (s == size) cache.put(comp, fb);
                         ArrayList<View> vs = pending.remove(comp);
                         if (vs != null) for (View x : vs) x.invalidate();
                     }
@@ -63,6 +71,7 @@ class IconCache {
         });
     }
 
+    /** Default look for apps without a custom icon: their own icon on a rounded light plate. */
     static Bitmap render(Drawable d, int s) {
         Bitmap b = Bitmap.createBitmap(s, s, Bitmap.Config.ARGB_8888);
         Canvas c = new Canvas(b);

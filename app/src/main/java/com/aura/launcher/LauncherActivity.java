@@ -18,7 +18,6 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.text.format.DateFormat;
 import android.view.Gravity;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewPropertyAnimator;
@@ -27,15 +26,11 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
-import android.widget.Button;
-import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.GridView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
-import android.widget.SeekBar;
-import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 import java.text.SimpleDateFormat;
@@ -159,13 +154,8 @@ public class LauncherActivity extends Activity {
 
         dockBar = new LinearLayout(this);
         dockBar.setGravity(Gravity.CENTER);
-        GradientDrawable dg = new GradientDrawable();
-        dg.setColor(0x66141824);
-        dg.setCornerRadius(p.px(26));
-        dockBar.setBackgroundDrawable(dg);
-        dockBar.setPadding(p.px(14), p.px(10), p.px(14), p.px(10));
         FrameLayout.LayoutParams dl = new FrameLayout.LayoutParams(WRAP, WRAP, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
-        dl.bottomMargin = p.px(10);
+        dl.bottomMargin = p.px(6);
         root.addView(dockBar, dl);
 
         home = new HomeView(this, this, p, ic, st.home);  // added after the dock so dragged icons draw over it
@@ -193,19 +183,17 @@ public class LauncherActivity extends Activity {
         done.setText("Done");
         done.setTextSize(15);
         done.setTypeface(Typeface.DEFAULT_BOLD);
-        done.setTextColor(0xFF222222);
-        done.setPadding(p.px(18), p.px(7), p.px(18), p.px(7));
-        GradientDrawable db = new GradientDrawable();
-        db.setColor(0xE6FFFFFF);
-        db.setCornerRadius(p.px(16));
-        done.setBackgroundDrawable(db);
+        done.setTextColor(0xFF3B3E47);
+        Neu dn = new Neu(p, 0xFFE4E6EB, 0xFFFFFFFF, 0xFFB8BBC6, -1, false, 2);
+        done.setBackgroundDrawable(dn);
+        done.setPadding(dn.m + p.px(14), dn.m + p.px(5), dn.m + p.px(14), dn.m + p.px(5));
         done.setVisibility(View.GONE);
         done.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) { setEdit(false); }
         });
         FrameLayout.LayoutParams fl = new FrameLayout.LayoutParams(WRAP, WRAP, Gravity.TOP | Gravity.RIGHT);
-        fl.topMargin = p.px(10);
-        fl.rightMargin = p.px(20);
+        fl.topMargin = p.px(6);
+        fl.rightMargin = p.px(14);
         root.addView(done, fl);
 
         layoutMargins();
@@ -224,6 +212,11 @@ public class LauncherActivity extends Activity {
 
     void rebuildDock() {
         dockBar.removeAllViews();
+        boolean d = p.dark;
+        Neu n = new Neu(p, d ? 0xE62B2D33 : 0xE6E4E6EB, d ? 0x663C3F48 : 0xB3FFFFFF,
+                d ? 0x99191A1E : 0x66B8BBC6, 26, false, 3);
+        dockBar.setBackgroundDrawable(n);
+        dockBar.setPadding(n.m + p.px(10), n.m + p.px(4), n.m + p.px(10), n.m + p.px(4));
         for (final String comp : st.dock) {
             App a = repo.map.get(comp);
             if (a == null) continue;
@@ -301,8 +294,8 @@ public class LauncherActivity extends Activity {
 
     // ------------------------------------------------------------- overlays
 
-    int bg() { return p.dark ? 0xF0232529 : 0xF0F6F6F8; }
-    int fg() { return p.dark ? 0xFFF1F2F5 : 0xFF1B1C20; }
+    int bg() { return Neu.base(p); }
+    int fg() { return Neu.fg(p); }
 
     TextView tv(String s, int sp, int color) {
         TextView t = new TextView(this);
@@ -368,36 +361,6 @@ public class LauncherActivity extends Activity {
     void openDrawer() {
         if (overlay != null) return;
         setEdit(false);
-        LinearLayout col = new LinearLayout(this);
-        col.setOrientation(LinearLayout.VERTICAL);
-        GradientDrawable bgd = new GradientDrawable();
-        bgd.setColor(bg());
-        float r = p.px(22);
-        bgd.setCornerRadii(new float[]{r, r, r, r, 0, 0, 0, 0});
-        col.setBackgroundDrawable(bgd);
-
-        LinearLayout head = new LinearLayout(this);
-        head.setGravity(Gravity.CENTER_VERTICAL);
-        head.setPadding(p.px(32), p.px(8), p.px(32), p.px(8));
-        TextView title = tv("App Library", 22, fg());
-        title.setTypeface(Typeface.DEFAULT_BOLD);
-        head.addView(title, new LinearLayout.LayoutParams(0, WRAP, 1));
-        final EditText q = new EditText(this);
-        q.setHint("Search apps");
-        q.setSingleLine(true);
-        q.setTextColor(fg());
-        q.setHintTextColor(0xFF8E919A);
-        head.addView(q, new LinearLayout.LayoutParams(p.px(300), WRAP));
-        col.addView(head, new LinearLayout.LayoutParams(MATCH, WRAP));
-        head.setOnTouchListener(new View.OnTouchListener() {  // drag the header down to close
-            float y0;
-            public boolean onTouch(View v, MotionEvent e) {
-                if (e.getAction() == MotionEvent.ACTION_DOWN) y0 = e.getY();
-                else if (e.getAction() == MotionEvent.ACTION_UP && e.getY() - y0 > p.px(50)) closeOverlay(true);
-                return false;
-            }
-        });
-
         final AppAdapter ad = new AppAdapter(repo.apps);
         GridView g = grid(ad, ic.size + p.px(36));
         g.setPadding(p.px(24), p.px(8), p.px(24), p.px(8));
@@ -415,6 +378,43 @@ public class LauncherActivity extends Activity {
                 return true;
             }
         });
+
+        // the sheet follows the finger when pulled down and closes on a long pull or flick
+        Sheet col = new Sheet(this, p, g, new Runnable() {
+            public void run() { closeOverlay(true); }
+        });
+        GradientDrawable bgd = new GradientDrawable();
+        bgd.setColor(bg());
+        bgd.setStroke(1, Neu.hi(p));
+        float r = p.px(26);
+        bgd.setCornerRadii(new float[]{r, r, r, r, 0, 0, 0, 0});
+        col.setBackgroundDrawable(bgd);
+
+        View grab = new View(this);  // pull handle
+        grab.setBackgroundDrawable(Neu.sunk(p, -1, 1.5f));
+        LinearLayout.LayoutParams gl = new LinearLayout.LayoutParams(p.px(58), p.px(16));
+        gl.gravity = Gravity.CENTER_HORIZONTAL;
+        gl.topMargin = p.px(6);
+        col.addView(grab, gl);
+
+        LinearLayout head = new LinearLayout(this);
+        head.setGravity(Gravity.CENTER_VERTICAL);
+        head.setPadding(p.px(32), p.px(2), p.px(32), p.px(6));
+        TextView title = tv("App Library", 22, fg());
+        title.setTypeface(Typeface.DEFAULT_BOLD);
+        head.addView(title, new LinearLayout.LayoutParams(0, WRAP, 1));
+        EditText q = new EditText(this);
+        q.setHint("Search apps");
+        q.setSingleLine(true);
+        q.setTextSize(15);
+        q.setTextColor(fg());
+        q.setHintTextColor(0xFF8E919A);
+        Neu sn = Neu.sunk(p, 14, 2.5f);
+        q.setBackgroundDrawable(sn);
+        q.setPadding(sn.m + p.px(12), sn.m + p.px(4), sn.m + p.px(12), sn.m + p.px(4));
+        head.addView(q, new LinearLayout.LayoutParams(p.px(300), WRAP));
+        col.addView(head, new LinearLayout.LayoutParams(MATCH, WRAP));
+
         col.addView(g, new LinearLayout.LayoutParams(MATCH, 0, 1));
         q.addTextChangedListener(new TextWatcher() {
             public void beforeTextChanged(CharSequence s, int a, int b, int c) { }
@@ -454,11 +454,9 @@ public class LauncherActivity extends Activity {
         LinearLayout panel = new LinearLayout(this);
         panel.setOrientation(LinearLayout.VERTICAL);
         panel.setClickable(true);
-        GradientDrawable pd = new GradientDrawable();
-        pd.setColor(bg());
-        pd.setCornerRadius(p.px(28));
-        panel.setBackgroundDrawable(pd);
-        panel.setPadding(p.px(20), p.px(14), p.px(20), p.px(20));
+        Neu pn = Neu.raised(p, 28, 4);
+        panel.setBackgroundDrawable(pn);
+        panel.setPadding(pn.m + p.px(16), pn.m + p.px(10), pn.m + p.px(16), pn.m + p.px(16));
         final TextView title = tv(f.name, 20, fg());
         title.setGravity(Gravity.CENTER);
         title.setTypeface(Typeface.DEFAULT_BOLD);
@@ -510,7 +508,8 @@ public class LauncherActivity extends Activity {
             }
         });
         panel.addView(g, new LinearLayout.LayoutParams(MATCH, nrows * (ic.size + p.px(40))));
-        scrim.addView(panel, new FrameLayout.LayoutParams(p.px(3 * (p.iconDp + 30) + 40 > 460 ? 3 * (p.iconDp + 30) + 40 : 460), WRAP, Gravity.CENTER));
+        int pw = Math.max(p.px(460), 3 * (ic.size + p.px(30)) + 2 * pn.m + p.px(32));
+        scrim.addView(panel, new FrameLayout.LayoutParams(pw, WRAP, Gravity.CENTER));
         root.addView(scrim, new FrameLayout.LayoutParams(MATCH, MATCH));
         if (p.anim) {
             panel.setScaleX(0.6f); panel.setScaleY(0.6f); panel.setAlpha(0);
@@ -527,17 +526,30 @@ public class LauncherActivity extends Activity {
     LinearLayout row(String label, View ctl) {
         LinearLayout r = new LinearLayout(this);
         r.setGravity(Gravity.CENTER_VERTICAL);
-        r.setPadding(0, p.px(6), 0, p.px(6));
+        r.setPadding(0, p.px(5), 0, p.px(5));
         r.addView(tv(label, 15, fg()), new LinearLayout.LayoutParams(0, WRAP, 1));
         r.addView(ctl);
         return r;
     }
 
-    Switch sw(boolean v, final int k) {
-        Switch s = new Switch(this);
-        s.setChecked(v);
-        s.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            public void onCheckedChanged(CompoundButton b, boolean on) {
+    LinearLayout card() {
+        LinearLayout l = new LinearLayout(this);
+        l.setOrientation(LinearLayout.VERTICAL);
+        Neu n = Neu.raised(p, 16, 3);
+        l.setBackgroundDrawable(n);
+        l.setPadding(n.m + p.px(12), n.m + p.px(4), n.m + p.px(12), n.m + p.px(4));
+        return l;
+    }
+
+    TextView section(String s) {
+        TextView t = tv(s, 12, 0xFF8E919A);
+        t.setPadding(p.px(14), p.px(10), 0, p.px(2));
+        return t;
+    }
+
+    NeuSwitch sw(boolean v, final int k) {
+        return new NeuSwitch(this, p, v, new NeuSwitch.Listener() {
+            public void onChange(boolean on) {
                 switch (k) {
                     case 0: p.labels = on; break;
                     case 1: p.dock = on; break;
@@ -548,31 +560,27 @@ public class LauncherActivity extends Activity {
                 apply(k == 3);
             }
         });
-        return s;
     }
 
-    SeekBar sb(int max, int prog, final int k) {
-        SeekBar s = new SeekBar(this);
-        s.setMax(max);
-        s.setProgress(prog);
-        s.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            public void onProgressChanged(SeekBar b, int pr, boolean u) { }
-            public void onStartTrackingTouch(SeekBar b) { }
-            public void onStopTrackingTouch(SeekBar b) {
-                if (k == 0) p.iconDp = 40 + b.getProgress(); else p.gapDp = b.getProgress();
+    NeuSlider slider(int min, int max, int value, final int k) {
+        return new NeuSlider(this, p, min, max, value, new NeuSlider.Listener() {
+            public void onStop(int v) {
+                if (k == 0) p.iconDp = v; else p.gapDp = v;
                 apply(false);
             }
         });
-        s.setLayoutParams(new LinearLayout.LayoutParams(p.px(160), WRAP));
-        return s;
     }
 
-    Button btn(String s) {
-        Button b = new Button(this);
-        b.setText(s);
-        b.setMinWidth(0);
-        b.setMinimumWidth(0);
-        return b;
+    TextView nbtn(String s) {
+        TextView t = new TextView(this);
+        t.setText(s);
+        t.setTextSize(16);
+        t.setTextColor(fg());
+        t.setGravity(Gravity.CENTER);
+        t.setBackgroundDrawable(Neu.button(p, 14));
+        t.setPadding(p.px(18), p.px(10), p.px(18), p.px(10));
+        t.setClickable(true);
+        return t;
     }
 
     void showSettings(boolean anim) {
@@ -583,10 +591,11 @@ public class LauncherActivity extends Activity {
         sv.setBackgroundColor(bg());
         LinearLayout col = new LinearLayout(this);
         col.setOrientation(LinearLayout.VERTICAL);
-        col.setPadding(p.px(20), p.px(16), p.px(20), p.px(16));
+        col.setPadding(p.px(10), p.px(14), p.px(10), p.px(16));
 
         LinearLayout head = new LinearLayout(this);
         head.setGravity(Gravity.CENTER_VERTICAL);
+        head.setPadding(p.px(10), 0, p.px(10), 0);
         TextView t = tv("Settings", 22, fg());
         t.setTypeface(Typeface.DEFAULT_BOLD);
         head.addView(t, new LinearLayout.LayoutParams(0, WRAP, 1));
@@ -598,7 +607,7 @@ public class LauncherActivity extends Activity {
 
         final TextView val = tv("" + p.cols, 16, fg());
         val.setGravity(Gravity.CENTER);
-        Button minus = btn("\u2212"), plus = btn("+");
+        TextView minus = nbtn("\u2212"), plus = nbtn("+");
         minus.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) { if (p.cols > 4) { p.cols--; val.setText("" + p.cols); apply(false); } }
         });
@@ -608,19 +617,26 @@ public class LauncherActivity extends Activity {
         LinearLayout step = new LinearLayout(this);
         step.setGravity(Gravity.CENTER_VERTICAL);
         step.addView(minus);
-        step.addView(val, new LinearLayout.LayoutParams(p.px(28), WRAP));
+        step.addView(val, new LinearLayout.LayoutParams(p.px(30), WRAP));
         step.addView(plus);
 
-        col.addView(row("Columns (landscape)", step));
-        col.addView(row("Icon size", sb(40, p.iconDp - 40, 0)));
-        col.addView(row("Grid spacing", sb(24, p.gapDp, 1)));
-        col.addView(row("Icon labels", sw(p.labels, 0)));
-        col.addView(row("Dock", sw(p.dock, 1)));
-        col.addView(row("Clock", sw(p.clock, 2)));
-        col.addView(row("Dark appearance", sw(p.dark, 3)));
-        col.addView(row("Animations", sw(p.anim, 4)));
+        col.addView(section("HOME SCREEN"));
+        LinearLayout c1 = card();
+        c1.addView(row("Columns", step));
+        c1.addView(row("Icon size", slider(40, 80, p.iconDp, 0)));
+        c1.addView(row("Spacing", slider(0, 24, p.gapDp, 1)));
+        c1.addView(row("Icon labels", sw(p.labels, 0)));
+        c1.addView(row("Dock", sw(p.dock, 1)));
+        c1.addView(row("Clock", sw(p.clock, 2)));
+        col.addView(c1, new LinearLayout.LayoutParams(MATCH, WRAP));
 
-        Button wp = btn("Change wallpaper");
+        col.addView(section("APPEARANCE"));
+        LinearLayout c2 = card();
+        c2.addView(row("Dark appearance", sw(p.dark, 3)));
+        c2.addView(row("Animations", sw(p.anim, 4)));
+        col.addView(c2, new LinearLayout.LayoutParams(MATCH, WRAP));
+
+        TextView wp = nbtn("Change wallpaper");
         wp.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 closeOverlay(false);
@@ -628,7 +644,7 @@ public class LauncherActivity extends Activity {
                 catch (Exception e) { Toast.makeText(LauncherActivity.this, "No wallpaper picker found", Toast.LENGTH_SHORT).show(); }
             }
         });
-        Button reset = btn("Reset home layout");
+        TextView reset = nbtn("Reset home layout");
         reset.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 st.defaults(LauncherActivity.this, repo);
@@ -637,8 +653,16 @@ public class LauncherActivity extends Activity {
                 rebuildDock();
             }
         });
-        col.addView(wp);
-        col.addView(reset);
+        LinearLayout.LayoutParams b1 = new LinearLayout.LayoutParams(MATCH, WRAP);
+        b1.topMargin = p.px(14);
+        b1.leftMargin = p.px(6);
+        b1.rightMargin = p.px(6);
+        LinearLayout.LayoutParams b2 = new LinearLayout.LayoutParams(MATCH, WRAP);
+        b2.topMargin = p.px(8);
+        b2.leftMargin = p.px(6);
+        b2.rightMargin = p.px(6);
+        col.addView(wp, b1);
+        col.addView(reset, b2);
 
         sv.addView(col);
         wrap.addView(sv, new FrameLayout.LayoutParams(p.px(340), MATCH, Gravity.RIGHT));
