@@ -38,11 +38,11 @@ jobs:
         run: |
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_HOME" "platform-tools" "platforms;android-33" "build-tools;33.0.2"
 
-      - name: Install Gradle 7.4.2
+      - name: Install Gradle 7.6
         run: |
-          curl -fsSL -o /tmp/gradle.zip https://services.gradle.org/distributions/gradle-7.4.2-bin.zip
+          curl -fsSL -o /tmp/gradle.zip https://services.gradle.org/distributions/gradle-7.6-bin.zip
           sudo unzip -q /tmp/gradle.zip -d /opt
-          echo "/opt/gradle-7.4.2/bin" >> "$GITHUB_PATH"
+          echo "/opt/gradle-7.6/bin" >> "$GITHUB_PATH"
 
       - name: Build debug APK
         run: gradle assembleDebug --no-daemon --stacktrace
