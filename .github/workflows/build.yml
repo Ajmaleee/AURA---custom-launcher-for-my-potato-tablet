@@ -25,21 +25,52 @@ jobs:
         run: |
           SDKM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
           yes | "$SDKM" --licenses > /dev/null || true
-          "$SDKM" "platforms;android-33" "build-tools;30.0.3"
+          "$SDKM" "platforms;android-34" "build-tools;34.0.0"
 
-      - name: Install Gradle 7.5.1 (with retries and a backup source)
+      - name: Install Gradle 8.7 (with retries and a backup source)
         run: |
           for u in \
-            https://services.gradle.org/distributions/gradle-7.5.1-bin.zip \
-            https://github.com/gradle/gradle-distributions/releases/download/v7.5.1/gradle-7.5.1-bin.zip
+            https://services.gradle.org/distributions/gradle-8.7-bin.zip \
+            https://github.com/gradle/gradle-distributions/releases/download/v8.7.0/gradle-8.7-bin.zip
           do
             curl -fsSL --retry 5 --retry-all-errors --retry-delay 5 -o /tmp/gradle.zip "$u" && break
           done
           sudo unzip -q /tmp/gradle.zip -d /opt
-          echo "/opt/gradle-7.5.1/bin" >> "$GITHUB_PATH"
+          echo "/opt/gradle-8.7/bin" >> "$GITHUB_PATH"
 
-      - name: Safety patch for HomeView
-        run: sed -i 's/final LauncherActivity a;/LauncherActivity a;/' "$(find . -name HomeView.java | head -1)"
+      - name: Pin build files and patch sources
+        run: |
+          cd "$PROJ"
+          echo "include ':app'" > settings.gradle
+          cat > build.gradle <<'EOF'
+          buildscript {
+              repositories { google(); mavenCentral() }
+              dependencies { classpath 'com.android.tools.build:gradle:8.5.2' }
+          }
+          allprojects { repositories { google(); mavenCentral() } }
+          EOF
+          cat > app/build.gradle <<'EOF'
+          apply plugin: 'com.android.application'
+          android {
+              namespace 'com.aura.launcher'
+              compileSdk 34
+              defaultConfig {
+                  applicationId 'com.aura.launcher'
+                  minSdk 19
+                  targetSdk 19
+                  versionCode 1
+                  versionName '1.0'
+              }
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_1_8
+                  targetCompatibility JavaVersion.VERSION_1_8
+              }
+              lint { abortOnError false }
+          }
+          EOF
+          printf 'org.gradle.jvmargs=-Xmx2g\nandroid.useAndroidX=false\n' > gradle.properties
+          sed -i '/^ *package="com.aura.launcher"$/d' app/src/main/AndroidManifest.xml
+          sed -i 's/final LauncherActivity a;/LauncherActivity a;/' "$(find . -name HomeView.java | head -1)"
 
       - name: Build debug APK
         working-directory: ${{ env.PROJ }}
