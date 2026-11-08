@@ -1,0 +1,4 @@
+<resources>
+    <!-- Holo wallpaper theme: the system wallpaper is drawn by the OS, so AURA holds no wallpaper bitmap. -->
+    <style name="AuraTheme" parent="android:Theme.Holo.Wallpaper.NoTitleBar" />
+</resources>
