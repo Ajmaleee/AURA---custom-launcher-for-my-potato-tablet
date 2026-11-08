@@ -6,24 +6,39 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+
+      - name: Locate project folder
+        run: |
+          D=$(dirname "$(find . -name settings.gradle -not -path './.git/*' | head -1)")
+          echo "Project dir: $D"
+          echo "PROJ=$D" >> "$GITHUB_ENV"
 
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      - uses: android-actions/setup-android@v3
+      - name: Install Android SDK packages
+        run: |
+          SDKM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKM" --licenses > /dev/null || true
+          "$SDKM" "platforms;android-33" "build-tools;30.0.3"
 
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '7.5.1'
 
+      - name: Safety patch for HomeView
+        run: sed -i 's/final LauncherActivity a;/LauncherActivity a;/' "$(find . -name HomeView.java | head -1)"
+
       - name: Build debug APK
-        run: gradle assembleDebug --no-daemon
+        working-directory: ${{ env.PROJ }}
+        run: gradle assembleDebug --no-daemon --stacktrace
 
       - uses: actions/upload-artifact@v4
         with:
           name: aura-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+          path: ${{ env.PROJ }}/app/build/outputs/apk/debug/*.apk
