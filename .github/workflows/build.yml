@@ -20,13 +20,6 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: Debug environment
-        run: |
-          echo "JAVA_HOME=$JAVA_HOME"
-          echo "ANDROID_HOME=$HOME/android-sdk"
-          java -version
-          ls -la "$HOME/android-sdk/cmdline-tools/latest/bin/" 2>&1 || true
-
       - name: Install Android command-line tools
         run: |
           mkdir -p "$HOME/android-sdk/cmdline-tools"
@@ -40,7 +33,6 @@ jobs:
       - name: Accept SDK licenses
         run: |
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_HOME" --licenses > /dev/null 2>&1 || true
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_HOME" --list_installed
 
       - name: Install SDK packages
         run: |
@@ -52,11 +44,8 @@ jobs:
           sudo unzip -q /tmp/gradle.zip -d /opt
           echo "/opt/gradle-7.4.2/bin" >> "$GITHUB_PATH"
 
-      - name: Generate Gradle wrapper
-        run: gradle wrapper --gradle-version 7.4.2
-
       - name: Build debug APK
-        run: ./gradlew assembleDebug --no-daemon --stacktrace
+        run: gradle assembleDebug --no-daemon --stacktrace
         env:
           ANDROID_HOME: $HOME/android-sdk
 
